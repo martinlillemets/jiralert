@@ -61,8 +61,8 @@ receivers:
     # Copy all Prometheus labels into separate JIRA labels. Optional (default: false).
     add_group_labels: false
 
-	# Parent issue related fields, override globals
-	parent_jql: "project = \"AB\" AND type = \"Duty Report\" ORDER BY created DESC"
+    # Parent issue related fields, override globals
+    parent_jql: "project = \"AB\" AND type = \"Duty Report\" ORDER BY created DESC"
     parent_subtask_type: Alert
 
   - name: 'jira-xy'
@@ -118,6 +118,9 @@ type receiverTestConfig struct {
 	Description       string `yaml:"description,omitempty"`
 	WontFixResolution string `yaml:"wont_fix_resolution,omitempty"`
 	AddGroupLabels    bool   `yaml:"add_group_labels,omitempty"`
+
+	ParentJql         string `yaml:"parent_jql" json:"parent_jql"`
+	ParentSubtaskType string `yaml:"parent_subtask_type" json:"parent_subtask_type"`
 
 	// TODO(rporres): Add support for these.
 	// Fields            map[string]interface{} `yaml:"fields,omitempty"`
@@ -319,7 +322,7 @@ func TestReceiverOverrides(t *testing.T) {
 		{"ParentJql", "Project = \"ALERT\"", "Project = \"ALERT\""},
 		{"ParentSubtaskType", "Alert-task", "Alert-task"},
 	} {
-		optionalFields := []string{"Priority", "Description", "WontFixResolution", "AddGroupLabels"}
+		optionalFields := []string{"Priority", "Description", "WontFixResolution", "AddGroupLabels", "ParentJql", "ParentSubtaskType"}
 		defaultsConfig := newReceiverTestConfig(mandatoryReceiverFields(), optionalFields)
 		receiverConfig := newReceiverTestConfig([]string{"Name"}, optionalFields)
 
