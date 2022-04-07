@@ -26,9 +26,8 @@ defaults:
   # This can be used if there is automation and parent tickets change (eq: every week new parent)
   # This jql is fed into jira search api, for more info:
   # https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-search/#api-rest-api-3-search-post
-  # NB! If parent is used, then issue_type must be one of sub-task types in jira
   parent_jql: ""
-  # Optional, used in conjunction with parent_jql, if parent_jql find issue, then this type of issue is created
+  # Optional, used in conjunction with parent_jql, if it finds issue, then created issue type is taken from this
   # If this is not given or parent_jql returns empty, created issue type defaults to issue_type value
   parent_subtask_type: Subtask
 

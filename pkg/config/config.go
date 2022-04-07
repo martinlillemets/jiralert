@@ -255,6 +255,12 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		if rc.WontFixResolution == "" && c.Defaults.WontFixResolution != "" {
 			rc.WontFixResolution = c.Defaults.WontFixResolution
 		}
+		if rc.ParentJql == "" && c.Defaults.ParentJql != "" {
+			rc.ParentJql = c.Defaults.ParentJql
+		}
+		if rc.ParentSubtaskType == "" && c.Defaults.ParentSubtaskType != "" {
+			rc.ParentSubtaskType = c.Defaults.ParentSubtaskType
+		}
 		if len(c.Defaults.Fields) > 0 {
 			for key, value := range c.Defaults.Fields {
 				if _, ok := rc.Fields[key]; !ok {
