@@ -1,10 +1,20 @@
-{{ define "jira.summary" }}[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.SortedPairs.Values | join " " }} {{ if gt (len .CommonLabels) (len .GroupLabels) }}({{ with .CommonLabels.Remove .GroupLabels.Names }}{{ .Values | join " " }}{{ end }}){{ end }}{{ end }}
+{{ define "jira.summary" }}[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}]{{ if .CommonLabels.cluster }}[{{ .CommonLabels.cluster }}]{{end}} {{ (index .Alerts 0).Annotations.summary }}{{ end }}
 
-{{ define "jira.description" }}{{ range .Alerts.Firing }}Labels:
-{{ range .Labels.SortedPairs }} - {{ .Name }} = {{ .Value }}
+{{ define "jira.description" }}
+
+Group details:
+{{ range .GroupLabels.SortedPairs }} - {{ .Name | title }} = {{`{{`}}{{ .Value }}{{`}}`}}
 {{ end }}
-Annotations:
-{{ range .Annotations.SortedPairs }} - {{ .Name }} = {{ .Value }}
+
+{{ range .Alerts.Firing }}
+----
+{{ .Annotations.description }}
+
+Details:
+{{ range (.Labels.Remove $.GroupLabels.Names).SortedPairs }}
+- {{ .Name }} = {{`{{`}}{{ .Value }}{{`}}`}}
 {{ end }}
-Source: {{ .GeneratorURL }}
-{{ end }}{{ end }}
+
+{{ if .GeneratorURL }}[Alert source|{{ .GeneratorURL }}]{{ end }}
+{{ end }}
+{{ end }}
