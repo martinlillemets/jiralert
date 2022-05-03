@@ -284,7 +284,7 @@ func (r *Receiver) search(project, issueLabel string) (*jira.Issue, bool, error)
 		level.Warn(r.logger).Log("msg", "more than one issue matched, picking most recently resolved", "query", query, "issues", issues, "picked", issue)
 	}
 
-	level.Debug(r.logger).Log("msg", "found", "issue", issue, "query", query)
+	level.Debug(r.logger).Log("msg", "found", "issue", issue.Key, "query", query)
 	return &issue, false, nil
 }
 

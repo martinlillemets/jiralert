@@ -20,15 +20,15 @@ defaults:
   wont_fix_resolution: "Won't Fix"
   # Amount of time after being closed that an issue should be reopened, after which, a new issue is created.
   # Optional (default: always reopen)
-  reopen_duration: 0h
+  reopen_duration: 24h
 
   # Optional global jql to find the parent ticket to assign tickets to
+  # Property is used only if there is no Fields.parent properties
   # This can be used if there is automation and parent tickets change (eq: every week new parent)
   # This jql is fed into jira search api, for more info:
   # https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-search/#api-rest-api-3-search-post
   parent_jql: ""
-  # Optional, used in conjunction with parent_jql, if it finds issue, then created issue type is taken from this
-  # If this is not given or parent_jql returns empty, created issue type defaults to issue_type value
+  # Optional, used only if Fields.parent or parent_jql property exists, overwrites issue_type value
   parent_subtask_type: Subtask
 
 # Receiver definitions. At least one must be defined.
