@@ -123,20 +123,24 @@ func main() {
 		}
 
 		if conf.ParentJql != "" {
-			parentKey, err := searchParentKeyByJql(conf.ParentJql, *client)
-			if err != nil {
-				level.Debug(logger).Log("msg", "No issues found with given JQL", "JQL", conf.ParentJql)
-				errorHandler(w, http.StatusBadRequest, err, conf.Name, &data, logger)
-				return
-			}
+			if _, ok := conf.Fields["parent"]; ok {
+				level.Debug(logger).Log("msg", "Skip finding parent via JQL because parent is given")
+			} else {
+				parentKey, err := searchParentKeyByJql(conf.ParentJql, *client)
+				if err != nil {
+					level.Debug(logger).Log("msg", "No issues found with given JQL", "JQL", conf.ParentJql)
+					errorHandler(w, http.StatusBadRequest, err, conf.Name, &data, logger)
+					return
+				}
 
-			level.Debug(logger).Log("msg", "Found parent via JQL", "JQL", conf.ParentJql, "Parent", parentKey)
-			conf.Fields["parent"] = map[string]interface{}{"key": parentKey}
-
-			// if subtaskType is given, overwrite issue type with ParentSubtaskType
-			if conf.ParentSubtaskType != "" {
-				conf.IssueType = conf.ParentSubtaskType
+				level.Debug(logger).Log("msg", "Found parent via JQL", "JQL", conf.ParentJql, "Parent", parentKey)
+				conf.Fields["parent"] = map[string]interface{}{"key": parentKey}
 			}
+		}
+
+		// if parent exist and subtaskType is given, overwrite issue type with ParentSubtaskType
+		if _, ok := conf.Fields["parent"]; ok && conf.ParentSubtaskType != "" {
+			conf.IssueType = conf.ParentSubtaskType
 		}
 
 		if retry, err := notify.NewReceiver(logger, conf, tmpl, client.Issue).Notify(&data, *hashJiraLabel); err != nil {
