@@ -1,5 +1,6 @@
 /.project
 /.idea
+/.vscode
 /release
 /jiralert
 /jiralert*.tar.gz
