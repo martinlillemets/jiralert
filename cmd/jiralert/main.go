@@ -23,6 +23,7 @@ import (
 	"strconv"
 
 	"github.com/andygrunwald/go-jira"
+	"github.com/trivago/tgo/tcontainer"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -99,7 +100,7 @@ func main() {
 			errorHandler(w, http.StatusNotFound, fmt.Errorf("receiver missing: %s", data.Receiver), unknownReceiver, &data, logger)
 			return
 		}
-		level.Debug(logger).Log("msg", "  matched receiver", "receiver", conf.Name)
+		level.Debug(logger).Log("msg", "matched receiver", "receiver", conf.Name)
 
 		// TODO: Consider reusing notifiers or just jira clients to reuse connections.
 		var client *jira.Client
@@ -122,20 +123,37 @@ func main() {
 			return
 		}
 
+		var parentIssue jira.Issue
 		if conf.ParentJql != "" {
-			if _, ok := conf.Fields["parent"]; ok {
-				level.Debug(logger).Log("msg", "Skip finding parent via JQL because parent is given")
-			} else {
-				parentKey, err := searchParentKeyByJql(conf.ParentJql, *client)
+			parentIssue, err = searchParentByJql(conf.ParentJql, *client)
+			if err != nil {
+				level.Debug(logger).Log("msg", "Can not find issue with JQL", "JQL", conf.ParentJql)
+				errorHandler(w, http.StatusBadRequest, err, conf.Name, &data, logger)
+				return
+			}
+
+			level.Debug(logger).Log("msg", "Found parent via JQL", "JQL", conf.ParentJql, "parent", parentIssue.Key)
+			conf.Fields["parent"] = map[string]interface{}{"key": parentIssue.Key}
+
+		} else if pci, ok := conf.Fields["parent"]; ok {
+			if parentKey, exists := pci.(tcontainer.MarshalMap).Value("key"); exists {
+				parentIssue, err = searchParentByJql(fmt.Sprintf("'key' = %s", parentKey), *client)
 				if err != nil {
-					level.Debug(logger).Log("msg", "No issues found with given JQL", "JQL", conf.ParentJql)
+					level.Debug(logger).Log("msg", "Can not find issue with key", "key", parentKey)
 					errorHandler(w, http.StatusBadRequest, err, conf.Name, &data, logger)
 					return
 				}
-
-				level.Debug(logger).Log("msg", "Found parent via JQL", "JQL", conf.ParentJql, "Parent", parentKey)
-				conf.Fields["parent"] = map[string]interface{}{"key": parentKey}
 			}
+		}
+
+		// if parent issue exists and has assignee, use it as assignee for the new issue
+		if parentIssue.Fields != nil && parentIssue.Fields.Assignee != nil && parentIssue.Fields.Assignee.AccountID != "" {
+			level.Debug(logger).Log(
+				"msg", "Overwriting assignee with parent assignee",
+				"accountId", parentIssue.Fields.Assignee.AccountID,
+				"parent", parentIssue.Key,
+			)
+			conf.Fields["assignee"] = map[string]interface{}{"id": parentIssue.Fields.Assignee.AccountID}
 		}
 
 		// if parent exist and subtaskType is given, overwrite issue type with ParentSubtaskType
@@ -219,15 +237,15 @@ func setupLogger(lvl string, fmt string) (logger log.Logger) {
 	return
 }
 
-func searchParentKeyByJql(jql string, client jira.Client) (parentKey string, err error) {
-	options := &jira.SearchOptions{StartAt: 0, MaxResults: 1}
+func searchParentByJql(jql string, client jira.Client) (parentIssue jira.Issue, err error) {
+	options := &jira.SearchOptions{StartAt: 0, MaxResults: 1, Fields: []string{"assignee"}}
 	chunk, resp, err := client.Issue.Search(jql, options)
 	if err != nil {
 		return
 	}
 
 	if resp.Total > 0 {
-		parentKey = chunk[0].Key
+		parentIssue = chunk[0]
 	}
 	return
 }
