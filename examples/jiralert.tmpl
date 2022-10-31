@@ -1,7 +1,21 @@
-{{ define "jira.summary" }}[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}]{{ if .CommonLabels.cluster }}[{{ .CommonLabels.cluster }}]{{end}} {{ (index .Alerts 0).Annotations.summary }}{{ end }}
+{{ define "jira.summary" -}}
+    {{- if and (eq .Status "firing") (gt (.Alerts.Firing | len) 1) -}}
+      [{{ .Status | toUpper -}}:{{ .Alerts.Firing | len }}]
+    {{- else if (eq .Status "resolved") -}}
+      [{{ .Status | toUpper -}}]
+    {{- end -}}
+    {{- if .CommonLabels.cluster -}}
+        [{{- .CommonLabels.cluster }}]
+    {{- end -}}
+    {{- if .GroupLabels.app_instance -}}
+      [{{- .GroupLabels.app_instance -}}]
+    {{- else if .GroupLabels.app_name -}}
+      [{{- .GroupLabels.app_name -}}]
+    {{- end -}}
+    {{- " " -}}{{ (index .Alerts 0).Annotations.summary -}}
+{{- end }}
 
 {{ define "jira.description" }}
-
 Group details:
 {{ range .GroupLabels.SortedPairs }} - {{ .Name | title }} = {{`{{`}}{{ .Value }}{{`}}`}}
 {{ end }}
@@ -10,11 +24,12 @@ Group details:
 ----
 {{ .Annotations.description }}
 
+{{ if .GeneratorURL }}[Alert source|{{ .GeneratorURL }}]{{ end }}
+
 Details:
-{{ range (.Labels.Remove $.GroupLabels.Names).SortedPairs }}
-- {{ .Name }} = {{`{{`}}{{ .Value }}{{`}}`}}
+{{ range ((.Labels.Remove $.GroupLabels.Names).Remove (stringSlice "job" "label_team_owner" "endpoint" "metrics_path" "prometheus" "alertname" "severity" "service" "alert_slack" "alert_jira" "alert_call" "alert_group")).SortedPairs }}
+- {{ .Name | title }} = {{`{{`}}{{ .Value }}{{`}}`}}
 {{ end }}
 
-{{ if .GeneratorURL }}[Alert source|{{ .GeneratorURL }}]{{ end }}
 {{ end }}
 {{ end }}

@@ -157,8 +157,17 @@ func main() {
 		}
 
 		// if parent exist and subtaskType is given, overwrite issue type with ParentSubtaskType
-		if _, ok := conf.Fields["parent"]; ok && conf.ParentSubtaskType != "" {
-			conf.IssueType = conf.ParentSubtaskType
+		if _, ok := conf.Fields["parent"]; ok {
+			if conf.ParentSubtaskType != "" && conf.IssueType != conf.ParentSubtaskType {
+				level.Debug(logger).Log(
+					"msg", "Overwriting issue type with ParentSubtaskType",
+					"oldIssueType", conf.IssueType,
+					"newIssueType", conf.ParentSubtaskType,
+				)
+				conf.IssueType = conf.ParentSubtaskType
+			}
+			//OPS-3188 add parent key to groupLabels to prevent reopening old on-duty tickets
+			data.GroupLabels["parentKey"] = parentIssue.Key
 		}
 
 		if retry, err := notify.NewReceiver(logger, conf, tmpl, client.Issue).Notify(&data, *hashJiraLabel); err != nil {

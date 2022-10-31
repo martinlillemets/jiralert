@@ -72,6 +72,9 @@ func (r *Receiver) Notify(data *alertmanager.Data, hashJiraLabel bool) (bool, er
 		return retry, err
 	}
 
+	// OPS-3188 Remove parentKey label from groupLabels because we do not want to show it in template
+	delete(data.GroupLabels, "parentKey")
+
 	// We want up to date title no matter what.
 	// This allows reflecting current group state if desired by user e.g {{ len $.Alerts.Firing() }}
 	issueSummary, err := r.tmpl.Execute(r.conf.Summary, data)
